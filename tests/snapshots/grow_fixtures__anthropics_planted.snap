@@ -10,7 +10,7 @@ expression: "state::to_json(&a)"
   "planted": "2020-12-19",
   "last_grown": "2026-10-31",
   "trunk": {
-    "height": 17,
+    "height": 20,
     "girth": 3,
     "bends": [
       [
@@ -33,51 +33,194 @@ expression: "state::to_json(&a)"
   },
   "branches": [
     {
-      "repo_id": "R_kgDOVAJ3VA",
-      "name": "snix",
-      "lang": "Nix",
-      "color": "#7e7eff",
-      "anchor": 5,
+      "repo_id": "lang:TypeScript",
+      "name": "8 repos",
+      "lang": "TypeScript",
+      "color": "#3178c6",
+      "anchor": 2,
       "side": "right",
-      "length": 9,
-      "pad": 6,
-      "commits_total": 22853,
+      "length": 1,
+      "pad": 3,
+      "commits_total": 5049,
       "pruned": null
     },
     {
-      "repo_id": "R_kgDOT2qbxQ",
-      "name": "OpenROAD-flow-scripts",
+      "repo_id": "lang:Rust",
+      "name": "3 repos",
+      "lang": "Rust",
+      "color": "#dea584",
+      "anchor": 3,
+      "side": "left",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 4543,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:Go",
+      "name": "4 repos",
+      "lang": "Go",
+      "color": "#00ADD8",
+      "anchor": 4,
+      "side": "left",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 2400,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:Verilog",
+      "name": "1 repo",
       "lang": "Verilog",
       "color": "#b2b7f8",
-      "anchor": 8,
-      "side": "left",
-      "length": 9,
-      "pad": 5,
+      "anchor": 5,
+      "side": "right",
+      "length": 1,
+      "pad": 3,
       "commits_total": 11502,
       "pruned": null
     },
     {
-      "repo_id": "R_kgDOQFjJqA",
-      "name": "sandbox-runtime",
-      "lang": "TypeScript",
-      "color": "#3178c6",
-      "anchor": 11,
-      "side": "right",
-      "length": 8,
-      "pad": 5,
-      "commits_total": 888,
+      "repo_id": "lang:Jupyter Notebook",
+      "name": "1 repo",
+      "lang": "Jupyter Notebook",
+      "color": "#DA5B0B",
+      "anchor": 6,
+      "side": "left",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 656,
       "pruned": null
     },
     {
-      "repo_id": "R_kgDOQZyFQA",
-      "name": "claude-plugins-official",
+      "repo_id": "lang:Nix",
+      "name": "1 repo",
+      "lang": "Nix",
+      "color": "#7e7eff",
+      "anchor": 7,
+      "side": "left",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 22853,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:Lean",
+      "name": "2 repos",
+      "lang": "Lean",
+      "anchor": 8,
+      "side": "right",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 35,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:HTML",
+      "name": "5 repos",
+      "lang": "HTML",
+      "color": "#e34c26",
+      "anchor": 9,
+      "side": "left",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 28,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:JavaScript",
+      "name": "3 repos",
+      "lang": "JavaScript",
+      "color": "#f1e05a",
+      "anchor": 10,
+      "side": "right",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 2403,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:Dockerfile",
+      "name": "1 repo",
+      "lang": "Dockerfile",
+      "color": "#384d54",
+      "anchor": 11,
+      "side": "left",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 593,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:Shell",
+      "name": "3 repos",
+      "lang": "Shell",
+      "color": "#89e051",
+      "anchor": 12,
+      "side": "right",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 396,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:Kotlin",
+      "name": "1 repo",
+      "lang": "Kotlin",
+      "color": "#A97BFF",
+      "anchor": 13,
+      "side": "left",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 1150,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:Ruby",
+      "name": "2 repos",
+      "lang": "Ruby",
+      "color": "#701516",
+      "anchor": 14,
+      "side": "right",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 1262,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:C#",
+      "name": "1 repo",
+      "lang": "C#",
+      "color": "#7355dd",
+      "anchor": 15,
+      "side": "right",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 820,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:PHP",
+      "name": "1 repo",
+      "lang": "PHP",
+      "color": "#4F5D95",
+      "anchor": 16,
+      "side": "left",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 744,
+      "pruned": null
+    },
+    {
+      "repo_id": "lang:Python",
+      "name": "22 repos",
       "lang": "Python",
       "color": "#3572A5",
-      "anchor": 14,
-      "side": "left",
-      "length": 9,
-      "pad": 5,
-      "commits_total": 4658,
+      "anchor": 17,
+      "side": "right",
+      "length": 1,
+      "pad": 3,
+      "commits_total": 11845,
       "pruned": null
     }
   ],
@@ -112,15 +255,15 @@ expression: "state::to_json(&a)"
   "history": [
     {
       "date": "2020-12",
-      "cells_added": 12
+      "cells_added": 22
     },
     {
-      "date": "2022-11",
-      "cells_added": 11
+      "date": "2021-02",
+      "cells_added": 1
     },
     {
       "date": "2025-01",
-      "cells_added": 3
+      "cells_added": 6
     },
     {
       "date": "2025-03",
@@ -139,56 +282,88 @@ expression: "state::to_json(&a)"
       "cells_added": 1
     },
     {
-      "date": "2026-08-05",
-      "cells_added": 1
-    },
-    {
-      "date": "2026-08-06",
-      "cells_added": 1
-    },
-    {
-      "date": "2026-08-07",
-      "cells_added": 1
+      "date": "2026-08-23",
+      "cells_added": 3
     },
     {
       "date": "2026-08-24",
-      "cells_added": 1
+      "cells_added": 4
     },
     {
       "date": "2026-08-25",
+      "cells_added": 4
+    },
+    {
+      "date": "2026-08-26",
+      "cells_added": 2
+    },
+    {
+      "date": "2026-08-27",
       "cells_added": 1
     },
     {
       "date": "2026-08-28",
-      "cells_added": 1
+      "cells_added": 3
     },
     {
       "date": "2026-08-29",
       "cells_added": 1
     },
     {
-      "date": "2026-09-02",
+      "date": "2026-08-30",
       "cells_added": 1
+    },
+    {
+      "date": "2026-08-31",
+      "cells_added": 1
+    },
+    {
+      "date": "2026-09-02",
+      "cells_added": 4
     },
     {
       "date": "2026-09-03",
-      "cells_added": 1
+      "cells_added": 4
     },
     {
       "date": "2026-09-04",
-      "cells_added": 2
+      "cells_added": 5
     },
     {
       "date": "2026-09-05",
+      "cells_added": 3
+    },
+    {
+      "date": "2026-09-06",
+      "cells_added": 1
+    },
+    {
+      "date": "2026-09-08",
+      "cells_added": 1
+    },
+    {
+      "date": "2026-09-12",
+      "cells_added": 1
+    },
+    {
+      "date": "2026-09-13",
       "cells_added": 1
     },
     {
       "date": "2026-09-14",
-      "cells_added": 1
+      "cells_added": 2
     },
     {
       "date": "2026-09-15",
       "cells_added": 1
+    },
+    {
+      "date": "2026-10-16",
+      "cells_added": 1
+    },
+    {
+      "date": "2026-10-31",
+      "cells_added": 16
     }
   ],
   "vitals": {
@@ -199,11 +374,40 @@ expression: "state::to_json(&a)"
     "stars_total": 700543,
     "public_repos": 116,
     "activity_28d": {
-      "R_kgDOQFjJqA": 85,
-      "R_kgDOQZyFQA": 307,
-      "R_kgDOT2qbxQ": 0,
-      "R_kgDOVAJ3VA": 54
+      "lang:C#": 0,
+      "lang:Dockerfile": 0,
+      "lang:Go": 0,
+      "lang:HTML": 0,
+      "lang:JavaScript": 6,
+      "lang:Jupyter Notebook": 0,
+      "lang:Kotlin": 0,
+      "lang:Lean": 0,
+      "lang:Nix": 54,
+      "lang:PHP": 0,
+      "lang:Python": 368,
+      "lang:Ruby": 0,
+      "lang:Rust": 0,
+      "lang:Shell": 0,
+      "lang:TypeScript": 85,
+      "lang:Verilog": 0
     },
-    "grew": {}
+    "grew": {
+      "lang:C#": 1,
+      "lang:Dockerfile": 1,
+      "lang:Go": 1,
+      "lang:HTML": 1,
+      "lang:JavaScript": 1,
+      "lang:Jupyter Notebook": 1,
+      "lang:Kotlin": 1,
+      "lang:Lean": 1,
+      "lang:Nix": 1,
+      "lang:PHP": 1,
+      "lang:Python": 1,
+      "lang:Ruby": 1,
+      "lang:Rust": 1,
+      "lang:Shell": 1,
+      "lang:TypeScript": 1,
+      "lang:Verilog": 1
+    }
   }
 }

@@ -25,8 +25,8 @@ inputs:
     description: Also write bonsai.gif
     default: "false"
   max-branches:
-    description: Branch limit
-    default: "7"
+    description: Branch limit (1-20)
+    default: "16"
   exclude:
     description: Repos to skip (comma-separated globs)
     default: ""

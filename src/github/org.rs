@@ -25,6 +25,8 @@ use time::{Date, Duration, Month, OffsetDateTime, UtcOffset};
 
 /// Days of synthesised calendar: enough for a 21-day bloom streak and 60-day dormancy.
 pub const CALENDAR_DAYS: i64 = 70;
+/// Repos whose default-branch history makes an organization's calendar.
+pub const ORG_CALENDAR_REPOS: usize = 7;
 /// Day aliases per calendar request (2 repos × 70 days).
 pub const DAY_ALIASES: usize = 140;
 /// Repos per commit-count request (2 aliases each).
@@ -255,9 +257,11 @@ pub fn fetch(
         r.commits_365d = y;
     }
 
-    // The repos that get branches decide the calendar and the yearly counts.
+    // The biggest repos that get branches decide the calendar and the yearly counts (at most
+    // ORG_CALENDAR_REPOS, so a daily run stays within the query budget).
     let top: Vec<String> = rules::select_branches(&repos, &org_login, &opts.config)
         .iter()
+        .take(ORG_CALENDAR_REPOS)
         .map(|r| r.id.clone())
         .collect();
 

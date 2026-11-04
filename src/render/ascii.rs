@@ -20,7 +20,10 @@
 use crate::grid::{Grid, PotPart, Role, Shade, GRID_H, GRID_W, MAX_LANGS};
 
 /// Leaf keys per language, level 1 to 4.
-pub const LEAF_KEYS: [&str; MAX_LANGS] = ["qwer", "asdf", "zxcv", "1234", "5678", "ABCD", "EFGH"];
+pub const LEAF_KEYS: [&str; MAX_LANGS] = [
+    "qwer", "asdf", "zxcv", "1234", "5678", "ABCD", "EFGH", "ijmt", "uy90", "IJKL", "MNOU", "VWXY",
+    "Z!@#", "$%^&", "*()-", "+=[]",
+];
 
 /// A map that cannot become a grid.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -173,11 +176,11 @@ mod tests {
             })
         );
         assert_eq!(
-            parse("..#"),
+            parse("..~"),
             Err(MapError::UnknownChar {
                 row: 0,
                 col: 2,
-                ch: '#'
+                ch: '~'
             })
         );
         assert_eq!(

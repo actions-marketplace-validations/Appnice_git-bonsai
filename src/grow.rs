@@ -93,7 +93,7 @@ pub fn grow(state: &TreeState, snapshot: &Snapshot, cfg: &Config) -> Result<Tree
         out = Some(step(&mut next, &d, cfg));
         day += Duration::days(1);
     }
-    finish(&mut next, snapshot, out, &calendar);
+    finish(&mut next, snapshot, out, &calendar, cfg);
     Ok(next)
 }
 
@@ -179,8 +179,20 @@ pub fn plant(snapshot: &Snapshot, cfg: &Config) -> Result<TreeState, GrowError> 
         idle: rules::idle_days(&calendar, snapshot.date, origin),
     };
     let out = step(&mut state, &d, cfg);
-    finish(&mut state, snapshot, Some(out), &calendar);
+    finish(&mut state, snapshot, Some(out), &calendar, cfg);
     Ok(state)
+}
+
+/// Whether branches grow per language: above [`rules::GROUP_ABOVE`] active repos, and a tree that
+/// already grows per language stays so until [`rules::GROUP_BACK_AT`] or fewer.
+fn is_grouped(state: &TreeState, repos: &[RepoSignal], cfg: &Config) -> bool {
+    let active = rules::active_repos(repos, &state.login, cfg);
+    let now = living(state).any(|b| b.repo_id.starts_with(rules::LANG_PREFIX));
+    if now {
+        active > rules::GROUP_BACK_AT
+    } else {
+        active > rules::GROUP_ABOVE
+    }
 }
 
 /// One day of growth.
@@ -192,7 +204,21 @@ fn step(state: &mut TreeState, day: &Day, cfg: &Config) -> StepOut {
     state.trunk.bends = rules::trunk_bends(&state.seed, state.trunk.height);
 
     let phase = rules::phase(age, day.commits_account, day.streak, day.idle, cfg);
-    let by_id: BTreeMap<&str, &RepoSignal> = day.repos.iter().map(|r| (r.id.as_str(), r)).collect();
+
+    // Many active repos: one branch per language. Switching drops the other kind of branch
+    // without a scar (nothing was pruned, the tree changed how it counts).
+    let grouped = is_grouped(state, day.repos, cfg);
+    state
+        .branches
+        .retain(|b| b.pruned.is_some() || b.repo_id.starts_with(rules::LANG_PREFIX) == grouped);
+    let virt;
+    let repos: &[RepoSignal] = if grouped {
+        virt = rules::group_by_language(day.repos, &state.login, cfg);
+        &virt
+    } else {
+        day.repos
+    };
+    let by_id: BTreeMap<&str, &RepoSignal> = repos.iter().map(|r| (r.id.as_str(), r)).collect();
 
     // Refresh living branches; prune archived or deleted repos; drop excluded ones.
     let mut drop = BTreeSet::new();
@@ -213,7 +239,7 @@ fn step(state: &mut TreeState, day: &Day, cfg: &Config) -> StepOut {
                 }
             }
             // A missing repo was deleted (or made private); an empty list is a broken fetch.
-            None if !day.repos.is_empty() => prune(b, day.date),
+            None if !repos.is_empty() => prune(b, day.date),
             None => {}
         }
     }
@@ -221,14 +247,21 @@ fn step(state: &mut TreeState, day: &Day, cfg: &Config) -> StepOut {
 
     let mut grew = BTreeMap::new();
     if phase != PhaseKind::Dormant {
-        let selected = rules::select_branches(day.repos, &state.login, cfg);
+        let selected = rules::select_branches(repos, &state.login, cfg);
         let pins = selected.iter().filter(|r| rules::pinned(r, cfg)).count();
         let cap = cfg.max_branches.max(pins);
+        let want = selected.len().min(cap);
+        // The trunk grows to hold a branch for every repo you work in.
+        let fit = rules::trunk_height_for(want);
+        if fit > state.trunk.height {
+            state.trunk.height = fit;
+            state.trunk.bends = rules::trunk_bends(&state.seed, state.trunk.height);
+        }
         for repo in &selected {
             if living(state).any(|b| b.repo_id == repo.id) {
                 continue;
             }
-            if let Some(b) = new_branch(state, repo, &selected, &by_id, cap, cfg) {
+            if let Some(b) = new_branch(state, repo, &selected, &by_id, cap, want, cfg) {
                 grew.insert(b.repo_id.clone(), 1);
                 state.branches.push(b);
             }
@@ -278,6 +311,7 @@ fn finish(
     snap: &Snapshot,
     out: Option<StepOut>,
     calendar: &BTreeMap<Date, u32>,
+    cfg: &Config,
 ) {
     let year = snap.date.year();
     for y in snap.years.iter().filter(|y| **y < year) {
@@ -290,8 +324,13 @@ fn finish(
             }
         }
     }
-    let by_id: BTreeMap<&str, &RepoSignal> =
-        snap.repos.iter().map(|r| (r.id.as_str(), r)).collect();
+    let virt = rules::group_by_language(&snap.repos, &state.login, cfg);
+    let by_id: BTreeMap<&str, &RepoSignal> = snap
+        .repos
+        .iter()
+        .chain(virt.iter())
+        .map(|r| (r.id.as_str(), r))
+        .collect();
     let (phase, grew) = match out {
         Some(o) => (o.phase, o.grew),
         None => (state.vitals.phase, BTreeMap::new()),
@@ -387,9 +426,10 @@ fn new_branch(
     selected: &[&RepoSignal],
     by_id: &BTreeMap<&str, &RepoSignal>,
     cap: usize,
+    want: usize,
     cfg: &Config,
 ) -> Option<Branch> {
-    let full = living(state).count() >= cap || free_slots(state).is_empty();
+    let full = living(state).count() >= cap || free_slots(state, want).is_empty();
     if full {
         let victim = state
             .branches
@@ -407,7 +447,7 @@ fn new_branch(
             .min();
         let (_, _, i) = victim?;
         state.branches.remove(i);
-        if living(state).count() >= cap || free_slots(state).is_empty() {
+        if living(state).count() >= cap || free_slots(state, want).is_empty() {
             return None;
         }
     }
@@ -416,7 +456,7 @@ fn new_branch(
         .iter()
         .filter(|b| b.repo_id == repo.id)
         .count();
-    let anchor = choose_anchor(state, repo, nth)?;
+    let anchor = choose_anchor(state, repo, nth, want)?;
     let side = choose_side(state, anchor, &repo.id, nth);
     Some(Branch {
         repo_id: repo.id.clone(),
@@ -432,16 +472,17 @@ fn new_branch(
     })
 }
 
-/// Anchor rows still free: at least 3 rows from every living branch, not on a scar.
-fn free_slots(state: &TreeState) -> Vec<u32> {
-    rules::anchor_slots(state.trunk.height)
+/// Anchor rows still free: a grid step from every living branch, not on a scar.
+fn free_slots(state: &TreeState, want: usize) -> Vec<u32> {
+    let (slots, step) = rules::anchor_grid(state.trunk.height, want);
+    slots
         .into_iter()
         .filter(|s| {
             state.branches.iter().all(|b| {
                 if b.pruned.is_some() {
                     b.anchor != *s
                 } else {
-                    b.anchor.abs_diff(*s) >= rules::ANCHOR_STEP
+                    b.anchor.abs_diff(*s) >= step
                 }
             })
         })
@@ -451,12 +492,12 @@ fn free_slots(state: &TreeState) -> Vec<u32> {
 /// Where a new branch leaves the trunk. The repo with the most commits takes the top slot;
 /// the others go lower the bigger their pad (bigger pads lower), a re-opened repo goes next to
 /// its scar; ties are broken by the seed.
-fn choose_anchor(state: &TreeState, repo: &RepoSignal, nth: usize) -> Option<u32> {
-    let free = free_slots(state);
+fn choose_anchor(state: &TreeState, repo: &RepoSignal, nth: usize, want: usize) -> Option<u32> {
+    let free = free_slots(state, want);
     if free.is_empty() {
         return None;
     }
-    let slots = rules::anchor_slots(state.trunk.height);
+    let (slots, _) = rules::anchor_grid(state.trunk.height, want);
     let top_slot = slots.last().copied();
     let is_top = living(state).all(|b| repo.commits_total > b.commits_total);
     let score: Vec<(u32, u32)> = if is_top && top_slot.is_some_and(|t| free.contains(&t)) {
@@ -813,13 +854,68 @@ mod tests {
     }
 
     #[test]
+    fn every_active_repo_gets_a_branch_and_the_trunk_grows_to_fit() {
+        let st = seedling(date!(2026 - 09 - 01), date!(2026 - 10 - 01));
+        let repos: Vec<RepoSignal> = (0..10)
+            .map(|i| repo(&format!("R_{i}"), 10 * (i + 1), 10 * (i + 1)))
+            .collect();
+        let st = grow(&st, &snap(date!(2026 - 10 - 02), repos), &cfg()).unwrap();
+        let live: Vec<&Branch> = st.branches.iter().filter(|b| b.pruned.is_none()).collect();
+        assert_eq!(live.len(), 10);
+        assert_eq!(st.trunk.height, rules::trunk_height_for(10));
+        let mut rows: Vec<u32> = live.iter().map(|b| b.anchor).collect();
+        rows.sort_unstable();
+        rows.dedup();
+        assert_eq!(rows.len(), 10);
+    }
+
+    #[test]
+    fn many_repos_grow_one_branch_per_language() {
+        let st = seedling(date!(2020 - 01 - 01), date!(2026 - 10 - 01));
+        let langs = ["Rust", "Go", "Python"];
+        let repos: Vec<RepoSignal> = (0..30)
+            .map(|i| {
+                let mut r = repo(&format!("R_{i}"), 10 + i, 10 + i);
+                r.language = Some(langs[i as usize % 3].into());
+                r
+            })
+            .collect();
+        let st = grow(&st, &snap(date!(2026 - 10 - 02), repos.clone()), &cfg()).unwrap();
+        let mut ids: Vec<&str> = st
+            .branches
+            .iter()
+            .filter(|b| b.pruned.is_none())
+            .map(|b| b.repo_id.as_str())
+            .collect();
+        ids.sort_unstable();
+        assert_eq!(ids, ["lang:Go", "lang:Python", "lang:Rust"]);
+        assert!(st.branches.iter().all(|b| b.name == "10 repos"));
+        // back to per-repo branches only at 10 active repos or fewer, without scars
+        let few: Vec<RepoSignal> = repos.into_iter().take(11).collect();
+        let st2 = grow(&st, &snap(date!(2026 - 10 - 03), few.clone()), &cfg()).unwrap();
+        assert!(st2.branches.iter().all(|b| b.repo_id.starts_with("lang:")));
+        let st3 = grow(
+            &st2,
+            &snap(date!(2026 - 10 - 04), few[..10].to_vec()),
+            &cfg(),
+        )
+        .unwrap();
+        assert!(st3.branches.iter().all(|b| b.pruned.is_none()));
+        assert_eq!(st3.branches.len(), 10);
+    }
+
+    #[test]
     fn anchors_are_spaced_alternating_and_capped() {
         let mut st = seedling(date!(2010 - 01 - 01), date!(2026 - 01 - 01));
         st.trunk.height = 24;
         let repos: Vec<RepoSignal> = (0..10)
             .map(|i| repo(&format!("R_{i}"), 100 * (i + 1), 10 * (i + 1)))
             .collect();
-        let st = grow(&st, &snap(date!(2026 - 10 - 01), repos), &cfg()).unwrap();
+        let cfg7 = Config {
+            max_branches: 7,
+            ..cfg()
+        };
+        let st = grow(&st, &snap(date!(2026 - 10 - 01), repos), &cfg7).unwrap();
         let live: Vec<&Branch> = st.branches.iter().filter(|b| b.pruned.is_none()).collect();
         assert_eq!(live.len(), 7);
         for w in live.windows(2) {

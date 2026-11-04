@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 /// Configuration errors (exit code 2 in the CLI).
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum ConfigError {
-    #[error("max_branches must be 1..=7, got {0}")]
+    #[error("max_branches must be 1..=20, got {0}")]
     MaxBranches(usize),
     #[error("max_growth_per_day must be 1..=8, got {0}")]
     MaxGrowth(u32),
@@ -37,7 +37,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
-            max_branches: 7,
+            max_branches: 16,
             exclude: Vec::new(),
             pin: Vec::new(),
             max_growth_per_day: 1,
@@ -51,7 +51,7 @@ impl Default for Config {
 impl Config {
     /// Checks ranges; call after merging file and flags.
     pub fn validate(&self) -> Result<(), ConfigError> {
-        if !(1..=7).contains(&self.max_branches) {
+        if !(1..=crate::rules::MAX_BRANCHES).contains(&self.max_branches) {
             return Err(ConfigError::MaxBranches(self.max_branches));
         }
         if !(1..=8).contains(&self.max_growth_per_day) {
@@ -103,6 +103,6 @@ mod tests {
     fn partial_json_fills_defaults() {
         let c: Config = serde_json::from_str(r#"{"pin":["ferrite"]}"#).unwrap();
         assert_eq!(c.pin, vec!["ferrite".to_string()]);
-        assert_eq!(c.max_branches, 7);
+        assert_eq!(c.max_branches, 16);
     }
 }

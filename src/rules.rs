@@ -25,6 +25,11 @@ pub const PRUNED_LEN: u32 = 3;
 /// Lowest anchor row and the spacing between anchors.
 pub const ANCHOR_MIN: u32 = 3;
 pub const ANCHOR_STEP: u32 = 3;
+/// Spacing of the tight grid used when more repos want a branch than the regular grid holds:
+/// one branch per trunk row, sides alternating.
+pub const ANCHOR_STEP_DENSE: u32 = 1;
+/// Most branches a tree can hold (rows 2..=21 of the tallest trunk).
+pub const MAX_BRANCHES: usize = 20;
 
 /// `floor(log2(1 + n))`.
 pub fn ilog2_1p(n: u64) -> u32 {
@@ -164,6 +169,69 @@ pub fn eligible(repo: &RepoSignal, login: &str, cfg: &Config) -> bool {
         && !cfg.exclude.iter().any(|g| glob_match(g, &repo.name))
 }
 
+/// More active repos than this and branches grow per language instead of per repo; a grouped
+/// tree goes back to repos only at [`GROUP_BACK_AT`] or fewer (no flip-flop around one number).
+pub const GROUP_ABOVE: usize = 12;
+pub const GROUP_BACK_AT: usize = 10;
+/// Id prefix of a language branch (`lang:Python`, `lang:` for repos without a language).
+pub const LANG_PREFIX: &str = "lang:";
+
+/// Eligible repos with commits in the last 365 days.
+pub fn active_repos(repos: &[RepoSignal], login: &str, cfg: &Config) -> usize {
+    repos
+        .iter()
+        .filter(|r| eligible(r, login, cfg) && r.commits_365d > 0)
+        .count()
+}
+
+/// One virtual repo per language over the eligible repos: commits summed, named `N repos`, the
+/// language and colour kept. Repos without a language form one group too.
+pub fn group_by_language(repos: &[RepoSignal], login: &str, cfg: &Config) -> Vec<RepoSignal> {
+    let mut groups: BTreeMap<String, (RepoSignal, u32)> = BTreeMap::new();
+    for r in repos.iter().filter(|r| eligible(r, login, cfg)) {
+        let key = r.language.clone().unwrap_or_default();
+        let (g, n) = groups.entry(key.clone()).or_insert_with(|| {
+            (
+                RepoSignal {
+                    id: format!("{LANG_PREFIX}{key}"),
+                    name: String::new(),
+                    is_fork: false,
+                    is_archived: false,
+                    stars: 0,
+                    language: r.language.clone(),
+                    color: r.color.clone(),
+                    commits_total: 0,
+                    commits_28d: 0,
+                    commits_today: 0,
+                    commits_365d: 0,
+                    commits_by_year: BTreeMap::new(),
+                    archived_at: None,
+                },
+                0,
+            )
+        });
+        g.stars += r.stars;
+        g.commits_total += r.commits_total;
+        g.commits_28d += r.commits_28d;
+        g.commits_today += r.commits_today;
+        g.commits_365d += r.commits_365d;
+        if r.commits_365d > 0 {
+            *n += 1;
+        }
+    }
+    groups
+        .into_values()
+        .map(|(mut g, n)| {
+            g.name = if n == 1 {
+                "1 repo".into()
+            } else {
+                format!("{n} repos")
+            };
+            g
+        })
+        .collect()
+}
+
 /// Is this repo pinned in the config?
 pub fn pinned(repo: &RepoSignal, cfg: &Config) -> bool {
     cfg.pin.iter().any(|p| p.eq_ignore_ascii_case(&repo.name))
@@ -264,6 +332,32 @@ pub fn anchor_slots(height: u32) -> Vec<u32> {
         v.push(top);
     }
     v
+}
+
+/// Anchor rows and their spacing for `want` branches. The regular grid when it has room for
+/// them; otherwise one branch per row from row 2 to `height − 3`, so every active repo gets a
+/// branch (the trunk grows to fit them, see [`trunk_height_for`]).
+pub fn anchor_grid(height: u32, want: usize) -> (Vec<u32>, u32) {
+    let v = anchor_slots(height);
+    if v.len() >= want {
+        return (v, ANCHOR_STEP);
+    }
+    let dense: Vec<u32> = (2..=height.saturating_sub(3)).collect();
+    if dense.len() > v.len() {
+        (dense, ANCHOR_STEP_DENSE)
+    } else {
+        (v, ANCHOR_STEP)
+    }
+}
+
+/// The trunk height that holds `want` branches: the trunk grows with the number of repos you
+/// work in, not only with the account's age.
+pub fn trunk_height_for(want: usize) -> u32 {
+    if anchor_slots(8).len() >= want {
+        8
+    } else {
+        (want as u32 + 4).clamp(8, 24)
+    }
 }
 
 fn ymd(d: Date) -> String {
@@ -463,6 +557,7 @@ mod tests {
         let cfg = Config {
             exclude: vec!["dot*".into()],
             pin: vec!["quiet".into()],
+            max_branches: 7,
             ..Config::default()
         };
         let names: Vec<&str> = select_branches(&repos, "me", &cfg)
@@ -508,5 +603,15 @@ mod tests {
         assert_eq!(anchor_slots(9), vec![3, 6]);
         assert_eq!(anchor_slots(14), vec![3, 6, 11]);
         assert_eq!(anchor_slots(24), vec![3, 6, 9, 12, 15, 18, 21]);
+        assert_eq!(anchor_grid(8, 1), (vec![5], ANCHOR_STEP));
+        assert_eq!(anchor_grid(8, 4), (vec![2, 3, 4, 5], ANCHOR_STEP_DENSE));
+        assert_eq!(
+            anchor_grid(14, 5),
+            (vec![2, 3, 4, 5, 6, 7, 8, 9, 10, 11], ANCHOR_STEP_DENSE)
+        );
+        assert_eq!(trunk_height_for(1), 8);
+        assert_eq!(trunk_height_for(16), 20);
+        assert_eq!(trunk_height_for(MAX_BRANCHES), 24);
+        assert_eq!(anchor_grid(24, 7), (anchor_slots(24), ANCHOR_STEP));
     }
 }

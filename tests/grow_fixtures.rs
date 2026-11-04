@@ -57,7 +57,7 @@ fn anthropics_org_is_planted_from_its_synthetic_calendar() {
     let a = plant(&snap, &Config::default()).unwrap();
     assert_eq!(a.kind, git_bonsai::snapshot::AccountKind::Org);
     assert_ne!(a.vitals.phase, PhaseKind::Dormant);
-    assert!(!a.branches.is_empty() && a.branches.len() <= 7);
+    assert!(!a.branches.is_empty() && a.branches.len() <= 16);
     assert_eq!(
         state::to_json(&a),
         state::to_json(&plant(&snap, &Config::default()).unwrap())

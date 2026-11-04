@@ -326,6 +326,12 @@ fn place_branches(state: &TreeState, t: &TrunkShape, apex: Option<usize>) -> Vec
     };
     let mut placed: Vec<Option<Placed>> = (0..state.branches.len()).map(|_| None).collect();
 
+    // A crowded tree (more living branches than the regular grid's 7) gets smaller pads, so every
+    // repo keeps some leaves: the three biggest side pads at most size 2, the rest size 0.
+    let living = state.branches.iter().filter(|b| b.pruned.is_none()).count();
+    let crowded = living > 7;
+    let mut side_rank = 0usize;
+
     for i in order {
         let b = &state.branches[i];
         let mut r = rng(&state.seed, &format!("branch:{}", b.repo_id));
@@ -362,7 +368,7 @@ fn place_branches(state: &TreeState, t: &TrunkShape, apex: Option<usize>) -> Vec
         }
         // RFC: on a collision lengthen the branch or lift it a row; then shrink the pad.
         // Negative lifts let the branch droop below a big pad above it.
-        const MOVES: [(i32, i32); 16] = [
+        const MOVES: [(i32, i32); 22] = [
             (0, 0),
             (2, 0),
             (0, 1),
@@ -379,8 +385,20 @@ fn place_branches(state: &TreeState, t: &TrunkShape, apex: Option<usize>) -> Vec
             (2, -3),
             (4, -3),
             (6, 3),
+            (6, 0),
+            (6, -1),
+            (8, 0),
+            (8, 1),
+            (8, -1),
+            (8, -2),
         ];
-        let (mut rx, mut ry) = pad_radii(b.pad);
+        let pad_size = if crowded {
+            side_rank += 1;
+            b.pad.min(if side_rank <= 3 { 2 } else { 0 })
+        } else {
+            b.pad
+        };
+        let (mut rx, mut ry) = pad_radii(pad_size);
         let base_len = (b.length as i32).max(2);
         'shrink: loop {
             let other = if b.side == Side::Left {

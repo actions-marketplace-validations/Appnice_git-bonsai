@@ -9,7 +9,7 @@ pub const GRID_H: usize = 34;
 pub type LangId = u8;
 
 /// Most distinct languages a grid can hold (one per branch, `max-branches` defaults to 7).
-pub const MAX_LANGS: usize = 7;
+pub const MAX_LANGS: usize = 16;
 
 /// Trunk shading across its girth: the leftmost cell is lit, the rightmost in shadow.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]

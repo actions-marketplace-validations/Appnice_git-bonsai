@@ -49,8 +49,9 @@ commits on the default branches of its most active public repos. It gets a celad
 
 | GitHub | Tree |
 |---|---|
-| Account age | Trunk height and girth, the root flare |
-| A repo you commit to (yours, not a fork, not archived) | A branch with a pad of leaves (top 7 by commits in the last year) |
+| Account age and how many repos you work in | Trunk height (tall enough for every branch), girth and root flare by age |
+| A repo you commit to (yours, not a fork, not archived) | A branch with a pad of leaves (up to 16, by commits in the last year) |
+| More than 12 active repos | One branch per language instead, sized by all its repos (`6 repos · python`) |
 | Commits in that repo | Branch length and pad size, `log2(1 + commits)` |
 | The repo's main language | The pad's colour (linguist colour, four shades in OKLCH) |
 | Activity in the last 28 days | Darker leaves, like the contribution graph |
@@ -120,14 +121,14 @@ It reads public data only, with the token from `gh auth token`, `GITHUB_TOKEN` o
 | `themes` | `dark,light` | Variants to render |
 | `animate` | `true` | CSS animation in the SVG |
 | `gif` | `false` | Also write `bonsai.gif` |
-| `max-branches` | `7` | Branch limit |
+| `max-branches` | `16` | Branch limit (1–20) |
 | `exclude` | | Repos to skip, comma-separated globs |
 | `commit-message` | `chore(bonsai): grow {date}` | |
 
 Optional `bonsai/bonsai.toml` in the profile repo:
 
 ```toml
-max_branches = 7
+max_branches = 16
 exclude = ["dotfiles", "*.github.io"]
 pin = ["my-favourite"]      # always gets a branch
 max_growth_per_day = 1
